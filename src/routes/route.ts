@@ -1,13 +1,23 @@
 // <==================== file for defining the routes ==================>
 
 // importing the required modules
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import userController from "../controller/userController";
+import { authenticateUserJwt } from "../middleware/userAuth";
 
 //creating the router
 const router = Router();
 
-router.get("/", (req: Request, res: Response) => {
-  res.json("inside");
-});
+// router for getting the initial page
+router.get("/", userController.getHome);
+
+// router for sign-up
+router.post("/signup", userController.signupUser);
+
+// router for login
+router.post("/login", userController.loginUser);
+
+// router for getting the home
+router.get("/user-home/:_id", authenticateUserJwt, userController.getUserPage);
 
 export default router;
