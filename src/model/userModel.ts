@@ -5,6 +5,7 @@ import { Document, Schema, model } from "mongoose";
 
 // creating the interface for the schema
 interface IImage {
+  _id: any;
   title: string;
   imageUrl: string;
   order: number;
@@ -44,10 +45,6 @@ const userSchema: Schema<IUser> = new Schema<IUser>({
       },
       imageUrl: {
         type: String,
-      },
-      order: {
-        type: Number,
-        default: 0,
       },
     },
   ],

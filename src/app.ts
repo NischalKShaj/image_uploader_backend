@@ -6,6 +6,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
 import router from "./routes/route";
 dotenv.config();
 
@@ -18,6 +19,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // enabling the cookie-parser
 app.use(cookieParser());
+
+// Configure bodyParser for large files
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+
+// Serve static files from the uploads directory
+app.use("/uploads", express.static("src/uploads"));
 
 // CORS configuration
 const corsOptions = {

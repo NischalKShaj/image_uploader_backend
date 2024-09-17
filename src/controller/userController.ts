@@ -81,10 +81,104 @@ const userController = {
       if (!user) {
         return res.status(400).json("invalid user");
       }
-      res.status(202).json(user);
+      res.status(202).json({ data: user });
     } catch (error) {
       console.error("error", error);
       res.status(500).json(error);
+    }
+  },
+
+  // controller for uploading the image
+  uploadImage: async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id;
+      const { imageName } = req.body;
+      const file = req.file
+        ? `http://localhost:4000/uploads/img/${req.file.filename}`
+        : null;
+      console.log(file);
+      const user = await userModel.findById({ _id: id });
+      if (!user) {
+        return res.status(400).json("invalid user");
+      }
+
+      const image = {
+        title: imageName,
+        imageUrl: file,
+      };
+
+      const updatedUser = await userModel.findByIdAndUpdate(
+        { _id: id },
+        { $push: { images: image } },
+        { new: true }
+      );
+
+      console.log("updated user", updatedUser);
+
+      res.status(201).json({ data: updatedUser });
+    } catch (error) {
+      console.error("error", error);
+      res.status(500).json(error);
+    }
+  },
+
+  // controller for deleting the image
+  deleteImage: async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id;
+      const imageId = req.params._id;
+      const updatedUser = await userModel.findByIdAndUpdate(
+        { _id: id },
+        { $pull: { images: { _id: imageId } } },
+        { new: true }
+      );
+      if (!updatedUser) {
+        return res.status(400).json("invalid user");
+      }
+      res.status(202).json({ data: updatedUser });
+    } catch (error) {
+      console.error("error", error);
+      res.status(500).json(error);
+    }
+  },
+
+  // controller for editing the image
+  editImage: async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const imageId = req.params._id;
+
+      const { imageName } = req.body;
+      const file = req.file
+        ? `http://localhost:4000/uploads/img/${req.file.filename}`
+        : null;
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Find the image index within the images array
+      const imageIndex = user.images.findIndex(
+        (img) => img._id.toString() === imageId
+      );
+      if (imageIndex === -1) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+
+      // Update the image
+      user.images[imageIndex].title = imageName;
+      if (file) {
+        user.images[imageIndex].imageUrl = file;
+      }
+
+      // Save the updated user document
+      const updatedUser = await user.save();
+
+      // Return the updated images array
+      res.status(200).json({ data: updatedUser });
+    } catch (error) {
+      console.error("error", error);
     }
   },
 };
