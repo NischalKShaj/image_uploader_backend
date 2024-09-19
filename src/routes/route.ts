@@ -44,4 +44,7 @@ router.patch(
   userController.editImage
 );
 
+// router for logging out the user
+router.get("/logout", authenticateUserJwt, userController.logoutUser);
+
 export default router;

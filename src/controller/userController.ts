@@ -14,7 +14,6 @@ const userController = {
     try {
       res.status(202).json("home page");
     } catch (error) {
-      console.error("error", error);
       res.status(500).json(error);
     }
   },
@@ -23,7 +22,6 @@ const userController = {
   signupUser: async (req: Request, res: Response) => {
     try {
       const { username, email, phone, password } = req.body;
-      console.log("username", username);
 
       const existingUser = await userModel.findOne({ email: email });
       if (existingUser) {
@@ -73,17 +71,14 @@ const userController = {
 
   // controller for getting the user homepage
   getUserPage: async (req: Request, res: Response) => {
-    console.log(req.params._id);
     try {
       const id = req.params._id;
-      console.log("inside", id);
       const user = await userModel.findById({ _id: id });
       if (!user) {
         return res.status(400).json("invalid user");
       }
       res.status(202).json({ data: user });
     } catch (error) {
-      console.error("error", error);
       res.status(500).json(error);
     }
   },
@@ -96,7 +91,6 @@ const userController = {
       const file = req.file
         ? `http://localhost:4000/uploads/img/${req.file.filename}`
         : null;
-      console.log(file);
       const user = await userModel.findById({ _id: id });
       if (!user) {
         return res.status(400).json("invalid user");
@@ -113,11 +107,8 @@ const userController = {
         { new: true }
       );
 
-      console.log("updated user", updatedUser);
-
       res.status(201).json({ data: updatedUser });
     } catch (error) {
-      console.error("error", error);
       res.status(500).json(error);
     }
   },
@@ -137,7 +128,6 @@ const userController = {
       }
       res.status(202).json({ data: updatedUser });
     } catch (error) {
-      console.error("error", error);
       res.status(500).json(error);
     }
   },
@@ -178,7 +168,16 @@ const userController = {
       // Return the updated images array
       res.status(200).json({ data: updatedUser });
     } catch (error) {
-      console.error("error", error);
+      res.status(500).json(error);
+    }
+  },
+
+  // controller for user logout
+  logoutUser: async (req: Request, res: Response) => {
+    try {
+      res.clearCookie("access_token").status(202).json("user logged out");
+    } catch (error) {
+      res.status(500).json(error);
     }
   },
 };
