@@ -46,6 +46,10 @@ const userSchema: Schema<IUser> = new Schema<IUser>({
       imageUrl: {
         type: String,
       },
+      order: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
 });

@@ -25,7 +25,7 @@ router.get("/user-home/:_id", authenticateUserJwt, userController.getUserPage);
 router.patch(
   "/uploads/:id",
   authenticateUserJwt,
-  upload.single("image"),
+  upload.array("images"),
   userController.uploadImage
 );
 
@@ -40,8 +40,15 @@ router.delete(
 router.patch(
   "/image/edit/:id/:_id",
   authenticateUserJwt,
-  upload.single("image"),
+  upload.single("images"),
   userController.editImage
+);
+
+// router for rearranging
+router.patch(
+  "/image/reorder/:userId",
+  authenticateUserJwt,
+  userController.rearrangeImage
 );
 
 // router for logging out the user

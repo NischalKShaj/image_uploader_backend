@@ -83,32 +83,57 @@ const userController = {
     }
   },
 
-  // controller for uploading the image
   uploadImage: async (req: Request, res: Response) => {
     try {
       const id = req.params.id;
-      const { imageName } = req.body;
-      const file = req.file
-        ? `http://localhost:4000/uploads/img/${req.file.filename}`
-        : null;
-      const user = await userModel.findById({ _id: id });
-      if (!user) {
-        return res.status(400).json("invalid user");
+      const imageNames = req.body.imageNames; // Ensure this is correctly parsed
+      const imageOrders = req.body.imageOrders; // Get the orders from request body
+
+      if (!req.files || !Array.isArray(req.files)) {
+        return res.status(400).json("No files uploaded");
       }
 
-      const image = {
-        title: imageName,
-        imageUrl: file,
-      };
+      if (
+        !imageNames ||
+        imageNames.length !== req.files.length ||
+        !imageOrders ||
+        imageOrders.length !== req.files.length
+      ) {
+        return res
+          .status(400)
+          .json(
+            "Image names and orders must match the number of files uploaded"
+          );
+      }
 
+      const user = await userModel.findById({ _id: id });
+      if (!user) {
+        return res.status(400).json("Invalid user");
+      }
+
+      // Get current images and determine the highest existing order
+      const currentImages = user.images || [];
+      const highestOrder = currentImages.reduce(
+        (max, image) => Math.max(max, image.order),
+        -1
+      );
+
+      const images = (req.files as Express.Multer.File[]).map(
+        (file, index) => ({
+          title: imageNames[index] || "Untitled", // Fallback to "Untitled" if the name is missing
+          imageUrl: `http://localhost:4000/uploads/img/${file.filename}`,
+          order: highestOrder + 1 + index, // Start from highest order + 1
+        })
+      );
       const updatedUser = await userModel.findByIdAndUpdate(
         { _id: id },
-        { $push: { images: image } },
+        { $push: { images: { $each: images } } },
         { new: true }
       );
 
       res.status(201).json({ data: updatedUser });
     } catch (error) {
+      console.error("error", error);
       res.status(500).json(error);
     }
   },
@@ -126,6 +151,21 @@ const userController = {
       if (!updatedUser) {
         return res.status(400).json("invalid user");
       }
+
+      // Reorder remaining images after deletion
+      const reorderedImages = updatedUser.images
+        .sort((a, b) => a.order - b.order) // Sort by current order
+        .map((image, index) => ({
+          _id: image._id,
+          title: image.title,
+          imageUrl: image.imageUrl,
+          order: index, // Reassign order based on the new index
+        }));
+
+      // Update the user's images with reordered list
+      updatedUser.images = reorderedImages;
+      await updatedUser.save();
+
       res.status(202).json({ data: updatedUser });
     } catch (error) {
       res.status(500).json(error);
@@ -138,7 +178,7 @@ const userController = {
       const userId = req.params.id;
       const imageId = req.params._id;
 
-      const { imageName } = req.body;
+      const { imageNames } = req.body;
       const file = req.file
         ? `http://localhost:4000/uploads/img/${req.file.filename}`
         : null;
@@ -157,7 +197,7 @@ const userController = {
       }
 
       // Update the image
-      user.images[imageIndex].title = imageName;
+      user.images[imageIndex].title = imageNames;
       if (file) {
         user.images[imageIndex].imageUrl = file;
       }
@@ -169,6 +209,41 @@ const userController = {
       res.status(200).json({ data: updatedUser });
     } catch (error) {
       res.status(500).json(error);
+    }
+  },
+
+  // controller for image rearranging
+  rearrangeImage: async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { reorderedIds } = req.body;
+
+      const user = await userModel.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update the order of images
+      reorderedIds.forEach((id: any, index: number) => {
+        const image = user.images.find((img) => img._id.toString() === id);
+        if (image) {
+          image.order = index;
+        }
+      });
+
+      // Sort the images array based on the new order
+      user.images.sort((a, b) => a.order - b.order);
+
+      await user.save();
+
+      res.status(200).json({
+        message: "Image order updated successfully",
+        images: user.images,
+      });
+    } catch (error) {
+      console.error("Error updating image order:", error);
+      res.status(500).json({ message: "Failed to update image order" });
     }
   },
 
